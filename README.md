@@ -11,9 +11,9 @@ Then use `pip` (or `pip3`, if there is a conflict with Python2) to install depen
 ```
 pip install -r requirements.txt
 ```
-To use the API SuperJob.ru, you need to [register the application](https://api.superjob.ru/register) and get the Secret key.
-_When registering the application, you will be required to specify the site. Enter any, they don't check._
-Create a file `.env` and put your `Secret key` in it.
+To use the API SuperJob.ru, you need to [register the application](https://api.superjob.ru/register) and get the `Secret key`.
+_When registering the application, you will be required to specify the site. Enter any, they don't check._  
+Create a file `.env` and put your `Secret key` in it:
 ```
 SJ_API_TOKEN=<your_secret_key>
 ```
