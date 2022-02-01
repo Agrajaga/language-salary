@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from terminaltables import AsciiTable
 
 
-def get_vacancies_hh(language: str, api_url: str) -> tuple:
+def get_vacancies_hh(language: str, api_url: str) -> tuple[int, list]:
     vacancies = []
     page = 0
     while True:
@@ -29,7 +29,7 @@ def get_vacancies_hh(language: str, api_url: str) -> tuple:
     return (json_response["found"], vacancies)
 
 
-def get_vacancies_sj(language: str, api_token: str, api_url: str) -> tuple:
+def get_vacancies_sj(language: str, api_token: str, api_url: str) -> tuple[int, list]:
     headers = {
         "X-Api-App-Id": api_token,
     }
@@ -99,7 +99,7 @@ def predict_rub_salary_sj(vacancy: dict) -> float | None:
 
 def calc_statistics(
     languages: tuple,
-    func_get_vacancies: Callable[[str], tuple],
+    func_get_vacancies: Callable[[str], tuple[int, list]],
     func_predict_salary: Callable[[dict], float | None]
 ) -> dict:
     vacancy_statistics = {}
