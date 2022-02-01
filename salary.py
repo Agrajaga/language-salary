@@ -180,8 +180,22 @@ if __name__ == "__main__":
         "1С",
     )
 
-    hh_statistics = calc_hh_statistics(languages)
-    sj_statistics = calc_sj_statistics(languages, sj_api_token)
-    print(tabled_statistics(hh_statistics, "HeadHunter Moscow"))
-    print()
-    print(tabled_statistics(sj_statistics, "SuperJob Moscow"))
+    try:
+        hh_statistics = calc_hh_statistics(languages)
+        print(tabled_statistics(hh_statistics, "HeadHunter Moscow"))
+    except requests.exceptions.HTTPError as error:
+        error_text = f"{error.response.status_code} {error.response.reason}"
+        print(f"Get vacancies from hh.ru\n \
+                Something went wrong: {error_text}")
+    except requests.exceptions.Timeout:
+        print(f"Get vacancies from hh.ru\nError: Timeout expired")
+
+    try:
+        sj_statistics = calc_sj_statistics(languages, sj_api_token)
+        print(tabled_statistics(sj_statistics, "SuperJob Moscow"))
+    except requests.exceptions.HTTPError as error:
+        error_text = f"{error.response.status_code} {error.response.reason}"
+        print(f"Get vacancies from SuperJob.ru\n \
+                Something went wrong: {error_text}")
+    except requests.exceptions.Timeout:
+        print(f"Get vacancies from SuperJob.ru\nError: Timeout expired")
