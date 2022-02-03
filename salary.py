@@ -19,13 +19,13 @@ def get_vacancies_hh(language: str, api_url: str) -> tuple[int, list]:
         }
         response = requests.get(f"{api_url}vacancies", params=params)
         response.raise_for_status()
-        json_response = response.json()
-        vacancies.extend(json_response["items"])
+        response_content = response.json()
+        vacancies.extend(response_content["items"])
         page += 1
-        if page == json_response["pages"]:
+        if page == response_content["pages"]:
             break
 
-    return (json_response["found"], vacancies)
+    return (response_content["found"], vacancies)
 
 
 def get_vacancies_sj(language: str, api_token: str, api_url: str) -> tuple[int, list]:
@@ -44,13 +44,13 @@ def get_vacancies_sj(language: str, api_token: str, api_url: str) -> tuple[int, 
         response = requests.get(
             f"{api_url}vacancies/", headers=headers, params=params)
         response.raise_for_status()
-        json_response = response.json()
-        vacancies.extend(json_response["objects"])
+        response_content = response.json()
+        vacancies.extend(response_content["objects"])
         page += 1
-        if not json_response["more"]:
+        if not response_content["more"]:
             break
 
-    return (json_response["total"], vacancies)
+    return (response_content["total"], vacancies)
 
 
 def predict_salary(
