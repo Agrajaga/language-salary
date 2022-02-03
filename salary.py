@@ -54,16 +54,6 @@ def get_vacancies_sj(language: str, api_token: str, api_url: str) -> tuple[int, 
     return (json_response["total"], vacancies)
 
 
-def get_currency_rates(url: str) -> dict:
-    currencies = {}
-    response = requests.get(f"{url}dictionaries")
-    response.raise_for_status()
-
-    for currency in response.json()["currency"]:
-        currencies[currency["code"]] = currency["rate"]
-    return currencies
-
-
 def predict_salary(
     salary_from: float | None,
     salary_to: float | None
@@ -78,14 +68,12 @@ def predict_salary(
     return None
 
 
-def predict_rub_salary_hh(vacancy: dict, currency_rates: dict) -> float | None:
+def predict_rub_salary_hh(vacancy: dict) -> float | None:
     salary_description = vacancy["salary"]
-    if not salary_description:
-        return
-    raw_salary = predict_salary(
+    if not salary_description or salary_description["currency"] != "RUR":
+        return None
+    return  predict_salary(
         salary_description["from"], salary_description["to"])
-    if raw_salary:
-        return raw_salary / currency_rates[salary_description["currency"]]
 
 
 def predict_rub_salary_sj(vacancy: dict) -> float | None:
@@ -113,7 +101,7 @@ def calc_statistics(
                 salary_sum += salary
                 count += 1
         language_stat["vacancies_processed"] = count
-        language_stat["average_salary"] = int(salary_sum / count)
+        language_stat["average_salary"] = int(salary_sum / count) if count else 0
         vacancy_statistics[language] = language_stat
     return vacancy_statistics
 
@@ -121,12 +109,9 @@ def calc_statistics(
 def calc_hh_statistics(languages: tuple) -> dict:
     hh_api_url = "https://api.hh.ru/"
 
-    currency_rates = get_currency_rates(url=hh_api_url)
-    predict_salary = partial(predict_rub_salary_hh,
-                             currency_rates=currency_rates)
     get_vacancies = partial(get_vacancies_hh,
                             api_url=hh_api_url)
-    return calc_statistics(languages, get_vacancies, predict_salary)
+    return calc_statistics(languages, get_vacancies, predict_rub_salary_hh)
 
 
 def calc_sj_statistics(languages: tuple, api_token: str) -> dict:
