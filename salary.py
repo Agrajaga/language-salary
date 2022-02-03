@@ -47,9 +47,8 @@ def get_vacancies_sj(language: str, api_token: str, api_url: str) -> tuple[int, 
         response.raise_for_status()
         json_response = response.json()
         vacancies.extend(json_response["objects"])
-        if json_response["more"]:
-            page += 1
-        else:
+        page += 1
+        if not json_response["more"]:
             break
 
     return (json_response["total"], vacancies)
@@ -70,14 +69,13 @@ def predict_salary(
     salary_to: float | None
 ) -> float | None:
     if salary_from and salary_to:
-        raw_salary = (salary_from + salary_to) / 2
+        return (salary_from + salary_to) / 2
     elif salary_from:
-        raw_salary = salary_from * 1.2
+        return salary_from * 1.2
     elif salary_to:
-        raw_salary = salary_to * 0.8
-    else:
-        return None
-    return raw_salary
+        return salary_to * 0.8
+    
+    return None
 
 
 def predict_rub_salary_hh(vacancy: dict, currency_rates: dict) -> float | None:
