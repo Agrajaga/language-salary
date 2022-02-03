@@ -140,7 +140,7 @@ def calc_sj_statistics(languages: tuple, api_token: str) -> dict:
     return calc_statistics(languages, get_vacancies, predict_rub_salary_sj)
 
 
-def tabled_statistics(statistics: dict, title: str) -> str:
+def get_statistics_table(statistics: dict, title: str) -> str:
     table_data = [
         [
             "Язык программирования",
@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
     try:
         hh_statistics = calc_hh_statistics(languages)
-        print(tabled_statistics(hh_statistics, "HeadHunter Moscow"))
+        print(get_statistics_table(hh_statistics, "HeadHunter Moscow"))
     except requests.exceptions.HTTPError as error:
         error_text = f"{error.response.status_code} {error.response.reason}"
         print(f"Get vacancies from hh.ru\n \
@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
     try:
         sj_statistics = calc_sj_statistics(languages, sj_api_token)
-        print(tabled_statistics(sj_statistics, "SuperJob Moscow"))
+        print(get_statistics_table(sj_statistics, "SuperJob Moscow"))
     except requests.exceptions.HTTPError as error:
         error_text = f"{error.response.status_code} {error.response.reason}"
         print(f"Get vacancies from SuperJob.ru\n \
