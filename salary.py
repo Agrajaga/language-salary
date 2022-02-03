@@ -14,7 +14,6 @@ def get_vacancies_hh(language: str, api_url: str) -> tuple[int, list]:
         params = {
             "text": f"программист {language}",
             "area": 1,
-            # "only_with_salary" : True,
             "per_page": 100,
             "page": page,
         }
