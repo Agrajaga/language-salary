@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from terminaltables import AsciiTable
 
 
-def get_vacancies_hh(language: str, api_url: str) -> tuple[int, list]:
+def get_hh_vacancies(language: str, api_url: str) -> tuple[int, list]:
     vacancies = []
     page = 0
     while True:
@@ -28,7 +28,7 @@ def get_vacancies_hh(language: str, api_url: str) -> tuple[int, list]:
     return (response_content["found"], vacancies)
 
 
-def get_vacancies_sj(language: str, api_token: str, api_url: str) -> tuple[int, list]:
+def get_sj_vacancies(language: str, api_token: str, api_url: str) -> tuple[int, list]:
     headers = {
         "X-Api-App-Id": api_token,
     }
@@ -65,7 +65,7 @@ def predict_salary(
         return salary_to * 0.8
 
 
-def predict_rub_salary_hh(vacancy: dict) -> float | None:
+def predict_hh_rub_salary(vacancy: dict) -> float | None:
     salary_description = vacancy["salary"]
     if salary_description and salary_description["currency"] == "RUR":
         return predict_salary(
@@ -73,7 +73,7 @@ def predict_rub_salary_hh(vacancy: dict) -> float | None:
             salary_description["to"])
 
 
-def predict_rub_salary_sj(vacancy: dict) -> float | None:
+def predict_sj_rub_salary(vacancy: dict) -> float | None:
     if vacancy["currency"] == "rub":
         return predict_salary(vacancy["payment_from"], vacancy["payment_to"])
 
@@ -105,18 +105,18 @@ def calc_statistics(
 def calc_hh_statistics(languages: tuple) -> dict:
     hh_api_url = "https://api.hh.ru/"
 
-    get_vacancies = partial(get_vacancies_hh,
+    get_vacancies = partial(get_hh_vacancies,
                             api_url=hh_api_url)
-    return calc_statistics(languages, get_vacancies, predict_rub_salary_hh)
+    return calc_statistics(languages, get_vacancies, predict_hh_rub_salary)
 
 
 def calc_sj_statistics(languages: tuple, api_token: str) -> dict:
     sj_api_url = "https://api.superjob.ru/2.0/"
 
-    get_vacancies = partial(get_vacancies_sj,
+    get_vacancies = partial(get_sj_vacancies,
                             api_token=api_token,
                             api_url=sj_api_url)
-    return calc_statistics(languages, get_vacancies, predict_rub_salary_sj)
+    return calc_statistics(languages, get_vacancies, predict_sj_rub_salary)
 
 
 def get_statistics_table(statistics: dict, title: str) -> str:
