@@ -63,23 +63,19 @@ def predict_salary(
         return salary_from * 1.2
     elif salary_to:
         return salary_to * 0.8
-    
-    return None
 
 
 def predict_rub_salary_hh(vacancy: dict) -> float | None:
     salary_description = vacancy["salary"]
-    if not salary_description or salary_description["currency"] != "RUR":
-        return None
-    return  predict_salary(
-        salary_description["from"], salary_description["to"])
+    if salary_description and salary_description["currency"] == "RUR":
+        return predict_salary(
+            salary_description["from"],
+            salary_description["to"])
 
 
 def predict_rub_salary_sj(vacancy: dict) -> float | None:
-    if vacancy["currency"] != "rub":
-        return None
-
-    return predict_salary(vacancy["payment_from"], vacancy["payment_to"])
+    if vacancy["currency"] == "rub":
+        return predict_salary(vacancy["payment_from"], vacancy["payment_to"])
 
 
 def calc_statistics(
@@ -100,7 +96,8 @@ def calc_statistics(
                 salary_sum += salary
                 count += 1
         language_stat["vacancies_processed"] = count
-        language_stat["average_salary"] = int(salary_sum / count) if count else 0
+        language_stat["average_salary"] = int(
+            salary_sum / count) if count else 0
         vacancy_statistics[language] = language_stat
     return vacancy_statistics
 
