@@ -7,8 +7,9 @@ from dotenv import load_dotenv
 from terminaltables import AsciiTable
 
 
-def get_hh_vacancies(language: str, api_url: str) -> tuple[int, list]:
-    vacancies = []
+def get_hh_vacancy_salaries(language: str) -> tuple[int, list]:
+    api_url = "https://api.hh.ru/"
+    salaries = []
     page = 0
     while True:
         params = {
@@ -20,19 +21,24 @@ def get_hh_vacancies(language: str, api_url: str) -> tuple[int, list]:
         response = requests.get(f"{api_url}vacancies", params=params)
         response.raise_for_status()
         response_content = response.json()
-        vacancies.extend(response_content["items"])
+        for vacancy in response_content["items"]:
+            salary_description = vacancy["salary"]
+            if salary_description and salary_description["currency"] == "RUR":
+                salary = (salary_description["from"], salary_description["to"])
+                salaries.append(salary)
         page += 1
         if page == response_content["pages"]:
             break
 
-    return (response_content["found"], vacancies)
+    return (response_content["found"], salaries)
 
 
-def get_sj_vacancies(language: str, api_token: str, api_url: str) -> tuple[int, list]:
+def get_sj_vacancy_salaries(language: str, api_token: str) -> tuple[int, list]:
+    api_url = "https://api.superjob.ru/2.0/"
     headers = {
         "X-Api-App-Id": api_token,
     }
-    vacancies = []
+    salaries = []
     page = 0
     while True:
         params = {
@@ -45,12 +51,15 @@ def get_sj_vacancies(language: str, api_token: str, api_url: str) -> tuple[int, 
             f"{api_url}vacancies/", headers=headers, params=params)
         response.raise_for_status()
         response_content = response.json()
-        vacancies.extend(response_content["objects"])
+        for vacancy in response_content["objects"]:
+            if vacancy["currency"] == "rub":
+                salary = (vacancy["payment_from"], vacancy["payment_to"])
+                salaries.append(salary)
         page += 1
         if not response_content["more"]:
             break
 
-    return (response_content["total"], vacancies)
+    return (response_content["total"], salaries)
 
 
 def predict_salary(
@@ -65,33 +74,19 @@ def predict_salary(
         return salary_to * 0.8
 
 
-def predict_hh_rub_salary(vacancy: dict) -> float | None:
-    salary_description = vacancy["salary"]
-    if salary_description and salary_description["currency"] == "RUR":
-        return predict_salary(
-            salary_description["from"],
-            salary_description["to"])
-
-
-def predict_sj_rub_salary(vacancy: dict) -> float | None:
-    if vacancy["currency"] == "rub":
-        return predict_salary(vacancy["payment_from"], vacancy["payment_to"])
-
-
 def calc_statistics(
     languages: tuple,
-    func_get_vacancies: Callable[[str], tuple[int, list]],
-    func_predict_salary: Callable[[dict], float | None]
+    func_get_salaries: Callable[[str], tuple[int, list]]
 ) -> dict:
     vacancy_statistics = {}
     for language in languages:
-        vacancies_found, vacancies = func_get_vacancies(language)
+        vacancies_found, salaries = func_get_salaries(language)
         language_stat = {}
         language_stat["vacancies_found"] = vacancies_found
         count = 0
         salary_sum = 0
-        for vacancy in vacancies:
-            salary = func_predict_salary(vacancy)
+        for salary_from, salary_to in salaries:
+            salary = predict_salary(salary_from, salary_to)
             if salary:
                 salary_sum += salary
                 count += 1
@@ -100,23 +95,6 @@ def calc_statistics(
             salary_sum / count) if count else 0
         vacancy_statistics[language] = language_stat
     return vacancy_statistics
-
-
-def calc_hh_statistics(languages: tuple) -> dict:
-    hh_api_url = "https://api.hh.ru/"
-
-    get_vacancies = partial(get_hh_vacancies,
-                            api_url=hh_api_url)
-    return calc_statistics(languages, get_vacancies, predict_hh_rub_salary)
-
-
-def calc_sj_statistics(languages: tuple, api_token: str) -> dict:
-    sj_api_url = "https://api.superjob.ru/2.0/"
-
-    get_vacancies = partial(get_sj_vacancies,
-                            api_token=api_token,
-                            api_url=sj_api_url)
-    return calc_statistics(languages, get_vacancies, predict_sj_rub_salary)
 
 
 def get_statistics_table(statistics: dict, title: str) -> str:
@@ -160,7 +138,7 @@ if __name__ == "__main__":
     )
 
     try:
-        hh_statistics = calc_hh_statistics(languages)
+        hh_statistics = calc_statistics(languages, get_hh_vacancy_salaries)
         print(get_statistics_table(hh_statistics, "HeadHunter Moscow"))
     except requests.exceptions.HTTPError as error:
         error_text = f"{error.response.status_code} {error.response.reason}"
@@ -170,7 +148,8 @@ if __name__ == "__main__":
         print(f"Get vacancies from hh.ru\nError: Timeout expired")
 
     try:
-        sj_statistics = calc_sj_statistics(languages, sj_api_token)
+        get_salaries = partial(get_sj_vacancy_salaries, api_token=sj_api_token)
+        sj_statistics = calc_statistics(languages, get_salaries)
         print(get_statistics_table(sj_statistics, "SuperJob Moscow"))
     except requests.exceptions.HTTPError as error:
         error_text = f"{error.response.status_code} {error.response.reason}"
